@@ -19,7 +19,7 @@ for episode in range(1000):
         action = []
         agent_status = [False, False, False]
         for i in range(3):
-            if agent_status[i] == False:  # 如果该agent未达到目标
+            if not agent_status[i]:  # 如果该agent未达到目标
                 agent_observation = state[i]
                 agent_action, _ = agents[i].choose_action(agent_observation)
                 action.append(agent_action)
