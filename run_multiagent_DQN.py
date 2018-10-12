@@ -7,6 +7,8 @@ from particle_env import *
 env = ParticleEnv()
 
 total_reward = []
+total_collision = []
+total_distance = []
 
 agents = np.zeros(3, dtype=object)
 for i in range(3):
@@ -15,6 +17,8 @@ for i in range(3):
 for episode in range(1000):
     state = env.reset()
     cum_reward = 0
+    collision_count = 0
+    distance_count = 0
     for step in range(200):
         action = []
         agent_status = [False, False, False]
@@ -23,8 +27,10 @@ for episode in range(1000):
                 agent_observation = state[i]
                 agent_action, _ = agents[i].choose_action(agent_observation)
                 action.append(agent_action)
-        next_state, reward, done = env.step(action)
+        next_state, reward, done, num_collision, target_distance = env.step(action)
         cum_reward += np.sum(np.array(reward))
+        collision_count += num_collision
+        distance_count += target_distance
         if step == 200 - 1:
             print('Episode ', episode, 'finished at reward ', cum_reward)
         for i in range(3):  # store transitions and learn
@@ -42,9 +48,15 @@ for episode in range(1000):
             agents[i].learn()
         state = next_state
     total_reward.append(cum_reward)
+    total_collision.append(collision_count)
+    total_distance.append(distance_count)
 
-pickle.dump(total_reward, open('Independent DQN', 'wb'))
+pickle.dump(total_reward, open('total_reward-Independent DQN', 'wb'))
+pickle.dump(total_collision, open('collision_count-Independent DQN', 'wb'))
+pickle.dump(total_distance, open('distance_count-Independent DQN', 'wb'))
+
 plt.plot(np.array(total_reward) / 200)
 plt.xlabel('Episode')
 plt.ylabel('Average reward')
+plt.titile('Average reward per step')
 plt.savefig('Independent DQN')

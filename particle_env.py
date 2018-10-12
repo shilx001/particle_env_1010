@@ -35,6 +35,7 @@ class ParticleEnv:
         observation = []
         reward = []
         done = []
+        num_collision = 0
         # action number
         assert len(action) == self.n_agent
         # 根据每个agent的action,返回每个agent的观测值
@@ -95,11 +96,12 @@ class ParticleEnv:
                 if np.sqrt(np.square(np.sum(self.agents[j].position - self.agents[i].position))) <= self.agents[
                     i].size + self.agents[j].size:
                     agent_reward -= 1
+                    num_collision += 1
             agent_observation.append(self.landmarks[i].position)
             observation.append(agent_observation)
             done.append(agent_done)
             reward.append(agent_reward)
-        return observation, reward, done
+        return observation, reward, done, num_collision, -(agent_reward + num_collision)
 
 
 class Agent:
