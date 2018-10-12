@@ -59,19 +59,22 @@ class DeepQNetwork:
         self.r = tf.placeholder(tf.float32, [None, ], name=self.namespace + 'r')  # input Reward
         self.a = tf.placeholder(tf.int32, [None, ], name=self.namespace + 'a')  # input Action [batch_size, ]
         self.done = tf.placeholder(tf.float32, [None, ], name=self.namespace + 'done')  # if s_ is the end of episode
+        self.goal = tf.placeholder(tf.float32, [None, 2], name=self.namespace + 'goal')  # goal of agent
 
         w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
         # ------------------ build evaluate_net ------------------
         with tf.variable_scope(self.namespace + 'eval_net'):
-            e1 = tf.layers.dense(self.s, 64, tf.nn.relu, kernel_initializer=w_initializer,
+            input_all = tf.concat([self.s, self.goal], axis=1)
+            e1 = tf.layers.dense(input_all, 64, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='e1')
             self.q_eval = tf.layers.dense(e1, self.n_actions, kernel_initializer=w_initializer,
                                           bias_initializer=b_initializer, name='q')
 
         # ------------------ build target_net ------------------
         with tf.variable_scope(self.namespace + 'target_net'):
-            t1 = tf.layers.dense(self.s_, 64, tf.nn.relu, kernel_initializer=w_initializer,
+            input_all = tf.concat([self.s_, self.goal], axis=1)
+            t1 = tf.layers.dense(input_all, 64, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='t1')
             self.q_next = tf.layers.dense(t1, self.n_actions, kernel_initializer=w_initializer,
                                           bias_initializer=b_initializer, name='t2')
@@ -88,26 +91,28 @@ class DeepQNetwork:
         with tf.variable_scope(self.namespace + 'train'):
             self._train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
-    def store_transition(self, s, a, r, s_, done):
+    def store_transition(self, s, a, r, s_, done, goal):
         s = np.reshape(np.array(s), [self.n_features, ])
         s_ = np.reshape(np.array(s_), [self.n_features, ])
+        goal = np.reshape(np.array(goal), [2, ])
 
         if not hasattr(self, 'memory_counter'):
             self.memory_counter = 0
-        transition = np.hstack((s, a, r, s_, done))
+        transition = np.hstack((s, a, r, s_, done, goal))
         # replace the old memory with new memory
         index = self.memory_counter % self.memory_size
         self.memory[index, :] = transition
         self.memory_counter += 1
 
-    def choose_action(self, observation):
+    def choose_action(self, observation, goal):
         # to have batch dimension when feed into tf placeholder
         observation = np.reshape(np.array(observation), [1, self.n_features])
+        goal = np.reshape(np.array(goal), [1, 2])
         # observation = observation[np.newaxis, :]
 
         if np.random.uniform() < 1 - self.epsilon:
             # forward feed the observation and get q value for every actions
-            actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
+            actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation, self.goal: goal})
             action = np.argmax(actions_value)
             is_greedy = 1
         else:
@@ -137,8 +142,9 @@ class DeepQNetwork:
                 self.s: batch_memory[:, :self.n_features],
                 self.a: batch_memory[:, self.n_features],
                 self.r: batch_memory[:, self.n_features + 1],
-                self.s_: batch_memory[:, -self.n_features-1:-1],
-                self.done: batch_memory[:, -1]
+                self.s_: batch_memory[:, -self.n_features - 2:-2],
+                self.done: batch_memory[:, -2],
+                self.goal: batch_memory[:, -1]
             })
 
         self.cost_his.append(cost)
