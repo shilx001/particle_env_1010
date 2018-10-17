@@ -1,7 +1,5 @@
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
-
 
 # DQN algorithm
 class DeepQNetwork:
@@ -36,7 +34,7 @@ class DeepQNetwork:
         self.learn_step_counter = 0
 
         # initialize zero memory [s, a, r, s_]
-        self.memory = np.zeros((self.memory_size, n_features * 2 + 3))  # 存入episode号与step号，方便进行后续计算
+        self.memory = np.zeros((self.memory_size, n_features * 2 + 3 + 2))
 
         # consist of [target_net, evaluate_net]
         self._build_net()
@@ -142,9 +140,9 @@ class DeepQNetwork:
                 self.s: batch_memory[:, :self.n_features],
                 self.a: batch_memory[:, self.n_features],
                 self.r: batch_memory[:, self.n_features + 1],
-                self.s_: batch_memory[:, -self.n_features - 2:-2],
-                self.done: batch_memory[:, -2],
-                self.goal: batch_memory[:, -1]
+                self.s_: batch_memory[:, -self.n_features-3:-3],
+                self.done: batch_memory[:, -3],
+                self.goal: batch_memory[:, -2:]
             })
 
         self.cost_his.append(cost)

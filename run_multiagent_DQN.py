@@ -27,6 +27,9 @@ for episode in range(1000):
                 agent_observation = state[i]
                 agent_action, _ = agents[i].choose_action(agent_observation)
                 action.append(agent_action)
+            else:#否则则保持静止
+                agent_action = 24
+                action.append(agent_action)
         next_state, reward, done, num_collision, target_distance = env.step(action)
         cum_reward += np.sum(np.array(reward))
         collision_count += num_collision
@@ -39,7 +42,7 @@ for episode in range(1000):
             agent_action = action[i]
             agent_reward = reward[i]
             agent_done = done[i]
-            if agent_done:  # 如果该agent已完成任务，则设其为done
+            if agent_done:  # 如果该agent已完成任务，则设其为done，不再学习
                 agent_status[i] = True
                 continue
             # 否则存储当前，并进行学习
@@ -58,5 +61,5 @@ pickle.dump(total_distance, open('distance_count-Independent DQN', 'wb'))
 plt.plot(np.array(total_reward) / 200)
 plt.xlabel('Episode')
 plt.ylabel('Average reward')
-plt.titile('Average reward per step')
+plt.title('Average reward per step')
 plt.savefig('Independent DQN')

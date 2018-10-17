@@ -26,9 +26,13 @@ for episode in range(1000):
         for i in range(3):
             if not agent_status[i]:  # 如果该agent未达到目标
                 agent_observation = state[i]
-                agent_action, agent_probability = agents[i].choose_action(agent_observation, np.reshape(episode,[1,1]))
+                agent_action, agent_probability = agents[i].choose_action(agent_observation,
+                                                                          np.reshape(episode, [1, 1]))
                 action.append(agent_action)
                 probability[i] = agent_probability
+            else:  # 否则则保持静止
+                agent_action = 24
+                action.append(agent_action)
         next_state, reward, done, num_collision, target_distance = env.step(action)
         cum_reward += np.sum(np.array(reward))
         collision_count += num_collision
@@ -48,14 +52,14 @@ for episode in range(1000):
             agent_probability = np.prod(
                 probability[list(set([0, 1, 2]) - set([i]))])  # except current agent's probability
             agents[i].store_transition(agent_observation, agent_action, agent_reward, agent_observation_,
-                                       int(agent_done), agent_probability,episode)
+                                       int(agent_done), agent_probability, episode)
             agents[i].learn(agent_probability)
         state = next_state
     total_reward.append(cum_reward)
     total_collision.append(collision_count)
     total_distance.append(distance_count)
 
-#agents[0].plot_cost()
+# agents[0].plot_cost()
 
 pickle.dump(total_reward, open('total_reward-Independent DQN IS FP', 'wb'))
 pickle.dump(total_collision, open('collision_count-Independent DQN IS FP', 'wb'))
